@@ -106,6 +106,7 @@ def _prepare_response_content(
 async def serialize_response(
     *,
     field: Optional[ModelField] = None,
+    response_model: Optional[Type[Any]] = None,
     response_content: Any,
     include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
@@ -116,25 +117,28 @@ async def serialize_response(
     is_coroutine: bool = True,
 ) -> Any:
     if field:
-        errors = []
-        response_content = _prepare_response_content(
-            response_content,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-        )
-        if is_coroutine:
-            value, errors_ = field.validate(response_content, {}, loc=("response",))
-        else:
-            value, errors_ = await run_in_threadpool(
-                field.validate, response_content, {}, loc=("response",)
+        if type(response_content) is not response_model:
+            errors = []
+            response_content = _prepare_response_content(
+                response_content,
+                exclude_unset=exclude_unset,
+                exclude_defaults=exclude_defaults,
+                exclude_none=exclude_none,
             )
-        if isinstance(errors_, ErrorWrapper):
-            errors.append(errors_)
-        elif isinstance(errors_, list):
-            errors.extend(errors_)
-        if errors:
-            raise ValidationError(errors, field.type_)
+            if is_coroutine:
+                value, errors_ = field.validate(response_content, {}, loc=("response",))
+            else:
+                value, errors_ = await run_in_threadpool(
+                    field.validate, response_content, {}, loc=("response",)
+                )
+            if isinstance(errors_, ErrorWrapper):
+                errors.append(errors_)
+            elif isinstance(errors_, list):
+                errors.extend(errors_)
+            if errors:
+                raise ValidationError(errors, field.type_)
+        else:
+            value = response_content
         return jsonable_encoder(
             value,
             include=include,
@@ -167,6 +171,7 @@ def get_request_handler(
     status_code: Optional[int] = None,
     response_class: Union[Type[Response], DefaultPlaceholder] = Default(JSONResponse),
     response_field: Optional[ModelField] = None,
+    response_model: Optional[Type[Any]] = None,
     response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     response_model_by_alias: bool = True,
@@ -233,6 +238,7 @@ def get_request_handler(
                 return raw_response
             response_data = await serialize_response(
                 field=response_field,
+                response_model=response_model,
                 response_content=raw_response,
                 include=response_model_include,
                 exclude=response_model_exclude,
@@ -423,6 +429,7 @@ class APIRoute(routing.Route):
             status_code=self.status_code,
             response_class=self.response_class,
             response_field=self.secure_cloned_response_field,
+            response_model=self.response_model,
             response_model_include=self.response_model_include,
             response_model_exclude=self.response_model_exclude,
             response_model_by_alias=self.response_model_by_alias,
