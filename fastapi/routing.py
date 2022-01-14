@@ -116,40 +116,41 @@ async def serialize_response(
     exclude_none: bool = False,
     is_coroutine: bool = True,
 ) -> Any:
-    if field:
-        if type(response_content) is not response_model:
-            errors = []
-            response_content = _prepare_response_content(
-                response_content,
-                exclude_unset=exclude_unset,
-                exclude_defaults=exclude_defaults,
-                exclude_none=exclude_none,
-            )
-            if is_coroutine:
-                value, errors_ = field.validate(response_content, {}, loc=("response",))
-            else:
-                value, errors_ = await run_in_threadpool(
-                    field.validate, response_content, {}, loc=("response",)
-                )
-            if isinstance(errors_, ErrorWrapper):
-                errors.append(errors_)
-            elif isinstance(errors_, list):
-                errors.extend(errors_)
-            if errors:
-                raise ValidationError(errors, field.type_)
-        else:
-            value = response_content
-        return jsonable_encoder(
-            value,
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
+    if not field:
+        return jsonable_encoder(response_content)
+
+    if type(response_content) is not response_model:
+        errors = []
+        response_content = _prepare_response_content(
+            response_content,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
         )
+        if is_coroutine:
+            value, errors_ = field.validate(response_content, {}, loc=("response",))
+        else:
+            value, errors_ = await run_in_threadpool(
+                field.validate, response_content, {}, loc=("response",)
+            )
+        if isinstance(errors_, ErrorWrapper):
+            errors.append(errors_)
+        elif isinstance(errors_, list):
+            errors.extend(errors_)
+        if errors:
+            raise ValidationError(errors, field.type_)
     else:
-        return jsonable_encoder(response_content)
+        value = response_content
+
+    return jsonable_encoder(
+        value,
+        include=include,
+        exclude=exclude,
+        by_alias=by_alias,
+        exclude_unset=exclude_unset,
+        exclude_defaults=exclude_defaults,
+        exclude_none=exclude_none,
+    )
 
 
 async def run_endpoint_function(
