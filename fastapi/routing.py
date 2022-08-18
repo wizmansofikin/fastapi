@@ -58,6 +58,12 @@ from starlette.types import ASGIApp, Scope
 from starlette.websockets import WebSocket
 
 
+def get_dataclass_dict_factory(exclude_none: bool = False) -> Callable[[Any], Any]:
+    if exclude_none:
+        return lambda data: dict(x for x in data if x[1] is not None)
+    return dict
+
+
 def _prepare_response_content(
     res: Any,
     *,
@@ -100,7 +106,9 @@ def _prepare_response_content(
             for k, v in res.items()
         }
     elif dataclasses.is_dataclass(res):
-        return dataclasses.asdict(res)
+        return dataclasses.asdict(
+            res, dict_factory=get_dataclass_dict_factory(exclude_none=exclude_none)
+        )
     return res
 
 
