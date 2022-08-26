@@ -58,14 +58,11 @@ def create_response_field(
     """
     Create a new response field. Raises if type_ is invalid.
     """
-    class_validators = class_validators or {}
-    field_info = field_info or FieldInfo()
-
     response_field = functools.partial(
         ModelField,
         name=name,
         type_=type_,
-        class_validators=class_validators,
+        class_validators=class_validators or {},
         default=default,
         required=required,
         model_config=model_config,
@@ -73,7 +70,8 @@ def create_response_field(
     )
 
     try:
-        return response_field(field_info=field_info)
+        _info = field_info or FieldInfo()
+        return response_field(field_info=_info)
     except RuntimeError:
         raise fastapi.exceptions.FastAPIError(
             f"Invalid args for response field! Hint: check that {type_} is a valid pydantic field type"
@@ -141,16 +139,15 @@ def generate_operation_id_for_path(
     )
     operation_id = name + path
     operation_id = re.sub("[^0-9a-zA-Z_]", "_", operation_id)
-    operation_id = operation_id + "_" + method.lower()
+    operation_id = f"{operation_id}_{method.lower()}"
     return operation_id
 
 
 def generate_unique_id(route: "APIRoute") -> str:
-    operation_id = route.name + route.path_format
-    operation_id = re.sub("[^0-9a-zA-Z_]", "_", operation_id)
+    route_path_name = route.name + route.path_format
+    operation_id = re.sub("[^0-9a-zA-Z_]", "_", route_path_name)
     assert route.methods
-    operation_id = operation_id + "_" + list(route.methods)[0].lower()
-    return operation_id
+    return f"{operation_id}_{list(route.methods)[0].lower()}"
 
 
 def deep_dict_update(main_dict: Dict[Any, Any], update_dict: Dict[Any, Any]) -> None:
