@@ -60,6 +60,14 @@ def jsonable_encoder(
     if exclude is not None and not isinstance(exclude, (set, dict)):
         exclude = set(exclude)
 
+    # Use type comparsions on common types before expensive isinstance checks
+    if type(obj) in (str, int, float, type(None)):
+        return obj
+    if type(obj) == dict:
+        return _encode_dict(obj, **kwargs)
+    if type(obj) in (list, set, frozenset, GeneratorType, tuple):
+        return _encode_array(obj, **kwargs)
+    
     if isinstance(obj, (str, int, float, type(None))):
         return obj
     if isinstance(obj, dict):
