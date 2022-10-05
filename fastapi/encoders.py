@@ -37,16 +37,6 @@ def jsonable_encoder(
     custom_encoder: Optional[Dict[Any, Callable[[Any], Any]]] = None,
     sqlalchemy_safe: bool = True,
 ) -> Any:
-    kwargs = {
-        "include": include,
-        "exclude": exclude,
-        "by_alias": by_alias,
-        "exclude_unset": exclude_unset,
-        "exclude_defaults": exclude_defaults,
-        "exclude_none": exclude_none,
-        "custom_encoder": custom_encoder,
-        "sqlalchemy_safe": sqlalchemy_safe,
-    }
     custom_encoder = custom_encoder or {}
     if custom_encoder:
         if type(obj) in custom_encoder:
@@ -60,6 +50,17 @@ def jsonable_encoder(
     if exclude is not None and not isinstance(exclude, (set, dict)):
         exclude = set(exclude)
 
+    kwargs = {
+        "include": include,
+        "exclude": exclude,
+        "by_alias": by_alias,
+        "exclude_unset": exclude_unset,
+        "exclude_defaults": exclude_defaults,
+        "exclude_none": exclude_none,
+        "custom_encoder": custom_encoder,
+        "sqlalchemy_safe": sqlalchemy_safe,
+    }
+    
     # Use type comparsions on common types before expensive isinstance checks
     if type(obj) in (str, int, float, type(None)):
         return obj
