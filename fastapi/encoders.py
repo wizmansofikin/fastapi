@@ -3,7 +3,7 @@ from collections import defaultdict
 from enum import Enum
 from pathlib import PurePath
 from types import GeneratorType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union, Type
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from pydantic import BaseModel
 from pydantic.json import ENCODERS_BY_TYPE
@@ -60,7 +60,7 @@ def jsonable_encoder(
         "custom_encoder": custom_encoder,
         "sqlalchemy_safe": sqlalchemy_safe,
     }
-    
+
     # Use type comparsions on common types before expensive isinstance checks
     if type(obj) in (str, int, float, type(None)):
         return obj
@@ -68,7 +68,7 @@ def jsonable_encoder(
         return _encode_dict(obj, **kwargs)
     if type(obj) in (list, set, frozenset, GeneratorType, tuple):
         return _encode_array(obj, **kwargs)
-    
+
     if isinstance(obj, (str, int, float, type(None))):
         return obj
     if isinstance(obj, dict):
@@ -84,7 +84,7 @@ def jsonable_encoder(
         return obj.value
     if isinstance(obj, PurePath):
         return str(obj)
-    
+
     if type(obj) in ENCODERS_BY_TYPE:
         return ENCODERS_BY_TYPE[type(obj)](obj)
     for encoder, classes_tuple in encoders_by_class_tuples.items():
@@ -101,12 +101,12 @@ def jsonable_encoder(
         except Exception as e:
             errors.append(e)
             raise ValueError(errors)
-    
+
     return _encode_dict(data, **kwargs)
 
 
 def _encode_dict(
-    obj:dict,
+    obj: dict,
     include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     by_alias: bool = True,
