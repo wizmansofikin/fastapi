@@ -49,44 +49,6 @@ def jsonable_encoder(
         include = set(include)
     if exclude is not None and not isinstance(exclude, (set, dict)):
         exclude = set(exclude)
-    if isinstance(obj, BaseModel):
-        encoder = getattr(obj.__config__, "json_encoders", {})
-        if custom_encoder:
-            encoder.update(custom_encoder)
-        obj_dict = obj.dict(
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            exclude_unset=exclude_unset,
-            exclude_none=exclude_none,
-            exclude_defaults=exclude_defaults,
-        )
-        if "__root__" in obj_dict:
-            obj_dict = obj_dict["__root__"]
-        return jsonable_encoder(
-            obj_dict,
-            exclude_none=exclude_none,
-            exclude_defaults=exclude_defaults,
-            custom_encoder=encoder,
-            sqlalchemy_safe=sqlalchemy_safe,
-        )
-    if dataclasses.is_dataclass(obj):
-        obj_dict = dataclasses.asdict(obj)
-        return jsonable_encoder(
-            obj_dict,
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-            custom_encoder=custom_encoder,
-            sqlalchemy_safe=sqlalchemy_safe,
-        )
-    if isinstance(obj, Enum):
-        return obj.value
-    if isinstance(obj, PurePath):
-        return str(obj)
     if isinstance(obj, (str, int, float, type(None))):
         return obj
     if isinstance(obj, dict):
@@ -141,6 +103,44 @@ def jsonable_encoder(
                 )
             )
         return encoded_list
+    if isinstance(obj, BaseModel):
+        encoder = getattr(obj.__config__, "json_encoders", {})
+        if custom_encoder:
+            encoder.update(custom_encoder)
+        obj_dict = obj.dict(
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_none=exclude_none,
+            exclude_defaults=exclude_defaults,
+        )
+        if "__root__" in obj_dict:
+            obj_dict = obj_dict["__root__"]
+        return jsonable_encoder(
+            obj_dict,
+            exclude_none=exclude_none,
+            exclude_defaults=exclude_defaults,
+            custom_encoder=encoder,
+            sqlalchemy_safe=sqlalchemy_safe,
+        )
+    if dataclasses.is_dataclass(obj):
+        obj_dict = dataclasses.asdict(obj)
+        return jsonable_encoder(
+            obj_dict,
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            custom_encoder=custom_encoder,
+            sqlalchemy_safe=sqlalchemy_safe,
+        )
+    if isinstance(obj, Enum):
+        return obj.value
+    if isinstance(obj, PurePath):
+        return str(obj)
 
     if type(obj) in ENCODERS_BY_TYPE:
         return ENCODERS_BY_TYPE[type(obj)](obj)
