@@ -9,6 +9,14 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, ValidationError, create_model
 
 
+class DictSubclass(dict):
+    pass
+
+
+class ListSubclass(list):
+    pass
+
+
 class Person:
     def __init__(self, name: str):
         self.name = name
@@ -110,6 +118,28 @@ def test_encode_dict():
         "name": "Firulais",
         "owner": {"name": "Foo"},
     }
+
+
+def test_encode_dict_subclass():
+    pet = DictSubclass({"name": "Firulais", "owner": {"name": "Foo"}})
+    assert jsonable_encoder(pet) == {"name": "Firulais", "owner": {"name": "Foo"}}
+    assert jsonable_encoder(pet, include={"name"}) == {"name": "Firulais"}
+    assert jsonable_encoder(pet, exclude={"owner"}) == {"name": "Firulais"}
+    assert jsonable_encoder(pet, include={}) == {}
+    assert jsonable_encoder(pet, exclude={}) == {
+        "name": "Firulais",
+        "owner": {"name": "Foo"},
+    }
+
+
+def test_encode_list():
+    data = [{"Foo": 1}, {"Bar": 2}]
+    assert jsonable_encoder(data) == [{"Foo": 1}, {"Bar": 2}]
+
+
+def test_encode_list_subclass():
+    data = ListSubclass([{"Foo": 1}, {"Bar": 2}])
+    assert jsonable_encoder(data) == [{"Foo": 1}, {"Bar": 2}]
 
 
 def test_encode_class():
