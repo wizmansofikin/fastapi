@@ -50,7 +50,7 @@ def jsonable_encoder(
     if exclude is not None and not isinstance(exclude, (set, dict)):
         exclude = set(exclude)
 
-    def _encode_dict(obj: Any) -> Any:
+    def encode_dict(obj: Any) -> Any:
         encoded_dict = {}
         allowed_keys = set(obj.keys())
         if include is not None:
@@ -87,7 +87,7 @@ def jsonable_encoder(
                 encoded_dict[encoded_key] = encoded_value
         return encoded_dict
 
-    def _encode_array(obj: Iterable[Any]) -> Any:
+    def encode_array(obj: Iterable[Any]) -> Any:
         encoded_list = []
         for item in obj:
             encoded_list.append(
@@ -105,10 +105,11 @@ def jsonable_encoder(
             )
         return encoded_list
 
-    def _encode_BaseModel(obj: BaseModel) -> Any:
+    def encode_BaseModel(obj: BaseModel) -> Any:
         encoder = getattr(obj.__config__, "json_encoders", {})
         if custom_encoder:
             encoder.update(custom_encoder)
+
         obj_dict = obj.dict(
             include=include,
             exclude=exclude,
@@ -119,6 +120,7 @@ def jsonable_encoder(
         )
         if "__root__" in obj_dict:
             obj_dict = obj_dict["__root__"]
+
         return jsonable_encoder(
             obj_dict,
             exclude_none=exclude_none,
@@ -131,21 +133,21 @@ def jsonable_encoder(
     if type(obj) in (str, int, float, type(None)):
         return obj
     if type(obj) == dict:
-        return _encode_dict(obj)
+        return encode_dict(obj)
     if type(obj) in (list, set, frozenset, GeneratorType, tuple):
-        return _encode_array(obj)
+        return encode_array(obj)
 
     if isinstance(obj, (str, int, float, type(None))):
         return obj
     if isinstance(obj, dict):
-        return _encode_dict(obj)
+        return encode_dict(obj)
     if isinstance(obj, (list, set, frozenset, GeneratorType, tuple)):
-        return _encode_array(obj)
+        return encode_array(obj)
     if isinstance(obj, BaseModel):
-        return _encode_BaseModel(obj)
+        return encode_BaseModel(obj)
     if dataclasses.is_dataclass(obj):
         obj_dict = dataclasses.asdict(obj)
-        return _encode_dict(obj_dict)
+        return encode_dict(obj_dict)
     if isinstance(obj, Enum):
         return obj.value
     if isinstance(obj, PurePath):
@@ -168,4 +170,4 @@ def jsonable_encoder(
             errors.append(e)
             raise ValueError(errors)
 
-    return _encode_dict(data)
+    return encode_dict(data)
