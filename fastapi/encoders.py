@@ -135,7 +135,6 @@ def jsonable_encoder(
             sqlalchemy_safe=sqlalchemy_safe,
         )
 
-
     # Use type comparisons on common types before expensive isinstance checks
     if type(obj) in PRIMATIVE_TYPES:
         return obj
