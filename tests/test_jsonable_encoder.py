@@ -120,6 +120,12 @@ def test_encode_dict():
     }
 
 
+def test_encode_dict_with_non_primative_keys():
+    date = datetime(1991, 2, 20)
+    data = {date: True}
+    assert jsonable_encoder(data) == {"1991-02-20T00:00:00": True}
+
+
 def test_encode_dict_subclass():
     pet = DictSubclass({"name": "Firulais", "owner": {"name": "Foo"}})
     assert jsonable_encoder(pet) == {"name": "Firulais", "owner": {"name": "Foo"}}
@@ -130,6 +136,8 @@ def test_encode_dict_subclass():
         "name": "Firulais",
         "owner": {"name": "Foo"},
     }
+
+
 
 
 def test_encode_list():
