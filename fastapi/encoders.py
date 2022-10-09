@@ -11,6 +11,9 @@ from pydantic.json import ENCODERS_BY_TYPE
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
 
+PRIMATIVE_TYPES = (str, bool, int, float, type(None))
+ARRAY_TYPES = (list, set, frozenset, GeneratorType, tuple)
+
 
 def generate_encoders_by_class_tuples(
     type_encoder_map: Dict[Any, Callable[[Any], Any]]
@@ -68,14 +71,17 @@ def jsonable_encoder(
                 and (value is not None or not exclude_none)
                 and key in allowed_keys
             ):
-                encoded_key = jsonable_encoder(
-                    key,
-                    by_alias=by_alias,
-                    exclude_unset=exclude_unset,
-                    exclude_none=exclude_none,
-                    custom_encoder=custom_encoder,
-                    sqlalchemy_safe=sqlalchemy_safe,
-                )
+                if isinstance(key, PRIMATIVE_TYPES):
+                    encoded_key = key
+                else:
+                    encoded_key = jsonable_encoder(
+                        key,
+                        by_alias=by_alias,
+                        exclude_unset=exclude_unset,
+                        exclude_none=exclude_none,
+                        custom_encoder=custom_encoder,
+                        sqlalchemy_safe=sqlalchemy_safe,
+                    )
                 encoded_value = jsonable_encoder(
                     value,
                     by_alias=by_alias,
@@ -105,7 +111,7 @@ def jsonable_encoder(
             )
         return encoded_list
 
-    def encode_BaseModel(obj: BaseModel) -> Any:
+    def encode_base_model(obj: BaseModel) -> Any:
         encoder = getattr(obj.__config__, "json_encoders", {})
         if custom_encoder:
             encoder.update(custom_encoder)
@@ -129,22 +135,17 @@ def jsonable_encoder(
             sqlalchemy_safe=sqlalchemy_safe,
         )
 
-    # Use type comparsions on common types before expensive isinstance checks
-    if type(obj) in (str, int, float, type(None)):
+
+    # Use type comparisons on common types before expensive isinstance checks
+    if type(obj) in PRIMATIVE_TYPES:
         return obj
     if type(obj) == dict:
         return encode_dict(obj)
-    if type(obj) in (list, set, frozenset, GeneratorType, tuple):
+    if type(obj) in ARRAY_TYPES:
         return encode_array(obj)
 
-    if isinstance(obj, (str, int, float, type(None))):
-        return obj
-    if isinstance(obj, dict):
-        return encode_dict(obj)
-    if isinstance(obj, (list, set, frozenset, GeneratorType, tuple)):
-        return encode_array(obj)
     if isinstance(obj, BaseModel):
-        return encode_BaseModel(obj)
+        return encode_base_model(obj)
     if dataclasses.is_dataclass(obj):
         obj_dict = dataclasses.asdict(obj)
         return encode_dict(obj_dict)
@@ -152,6 +153,14 @@ def jsonable_encoder(
         return obj.value
     if isinstance(obj, PurePath):
         return str(obj)
+
+    # Back up for Inherited types
+    if isinstance(obj, PRIMATIVE_TYPES):
+        return obj
+    if isinstance(obj, dict):
+        return encode_dict(obj)
+    if isinstance(obj, ARRAY_TYPES):
+        return encode_array(obj)
 
     if type(obj) in ENCODERS_BY_TYPE:
         return ENCODERS_BY_TYPE[type(obj)](obj)
