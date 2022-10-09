@@ -138,8 +138,6 @@ def test_encode_dict_subclass():
     }
 
 
-
-
 def test_encode_list():
     data = [{"Foo": 1}, {"Bar": 2}]
     assert jsonable_encoder(data) == [{"Foo": 1}, {"Bar": 2}]
