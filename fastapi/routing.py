@@ -71,6 +71,7 @@ def _prepare_response_content(
     exclude_unset: bool,
     exclude_defaults: bool = False,
     exclude_none: bool = False,
+    response_dict_by_alias: bool = True,
 ) -> Any:
     if isinstance(res, BaseModel):
         read_with_orm_mode = getattr(res.__config__, "read_with_orm_mode", None)
@@ -81,7 +82,7 @@ def _prepare_response_content(
             # access instead of dict iteration, e.g. lazy relationships.
             return res
         return res.dict(
-            by_alias=True,
+            by_alias=response_dict_by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
@@ -90,6 +91,7 @@ def _prepare_response_content(
         return [
             _prepare_response_content(
                 item,
+                response_dict_by_alias=response_dict_by_alias,
                 exclude_unset=exclude_unset,
                 exclude_defaults=exclude_defaults,
                 exclude_none=exclude_none,
@@ -100,6 +102,7 @@ def _prepare_response_content(
         return {
             k: _prepare_response_content(
                 v,
+                response_dict_by_alias=response_dict_by_alias,
                 exclude_unset=exclude_unset,
                 exclude_defaults=exclude_defaults,
                 exclude_none=exclude_none,
@@ -118,6 +121,7 @@ async def serialize_response(
     include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     by_alias: bool = True,
+    response_dict_by_alias: bool = True,
     exclude_unset: bool = False,
     exclude_defaults: bool = False,
     exclude_none: bool = False,
@@ -127,6 +131,7 @@ async def serialize_response(
         errors = []
         response_content = _prepare_response_content(
             response_content,
+            response_dict_by_alias=response_dict_by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
@@ -178,6 +183,7 @@ def get_request_handler(
     response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
     response_model_by_alias: bool = True,
+    response_dict_by_alias: bool = True,
     response_model_exclude_unset: bool = False,
     response_model_exclude_defaults: bool = False,
     response_model_exclude_none: bool = False,
@@ -262,6 +268,7 @@ def get_request_handler(
                 include=response_model_include,
                 exclude=response_model_exclude,
                 by_alias=response_model_by_alias,
+                response_dict_by_alias=response_dict_by_alias,
                 exclude_unset=response_model_exclude_unset,
                 exclude_defaults=response_model_exclude_defaults,
                 exclude_none=response_model_exclude_none,
@@ -351,6 +358,7 @@ class APIRoute(routing.Route):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -381,6 +389,7 @@ class APIRoute(routing.Route):
         self.response_model_include = response_model_include
         self.response_model_exclude = response_model_exclude
         self.response_model_by_alias = response_model_by_alias
+        self.response_dict_by_alias = response_dict_by_alias
         self.response_model_exclude_unset = response_model_exclude_unset
         self.response_model_exclude_defaults = response_model_exclude_defaults
         self.response_model_exclude_none = response_model_exclude_none
@@ -470,6 +479,7 @@ class APIRoute(routing.Route):
             response_model_include=self.response_model_include,
             response_model_exclude=self.response_model_exclude,
             response_model_by_alias=self.response_model_by_alias,
+            response_dict_by_alias=self.response_dict_by_alias,
             response_model_exclude_unset=self.response_model_exclude_unset,
             response_model_exclude_defaults=self.response_model_exclude_defaults,
             response_model_exclude_none=self.response_model_exclude_none,
@@ -572,6 +582,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -622,6 +633,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -653,6 +665,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -683,6 +696,7 @@ class APIRouter(routing.Router):
                 response_model_include=response_model_include,
                 response_model_exclude=response_model_exclude,
                 response_model_by_alias=response_model_by_alias,
+                response_dict_by_alias=response_dict_by_alias,
                 response_model_exclude_unset=response_model_exclude_unset,
                 response_model_exclude_defaults=response_model_exclude_defaults,
                 response_model_exclude_none=response_model_exclude_none,
@@ -820,6 +834,7 @@ class APIRouter(routing.Router):
                     response_model_include=route.response_model_include,
                     response_model_exclude=route.response_model_exclude,
                     response_model_by_alias=route.response_model_by_alias,
+                    response_dict_by_alias=route.response_dict_by_alias,
                     response_model_exclude_unset=route.response_model_exclude_unset,
                     response_model_exclude_defaults=route.response_model_exclude_defaults,
                     response_model_exclude_none=route.response_model_exclude_none,
@@ -880,6 +895,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -908,6 +924,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -936,6 +953,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -964,6 +982,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -992,6 +1011,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -1020,6 +1040,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -1048,6 +1069,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -1076,6 +1098,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -1104,6 +1127,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -1132,6 +1156,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -1160,6 +1185,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -1188,6 +1214,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -1216,6 +1243,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -1244,6 +1272,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
@@ -1272,6 +1301,7 @@ class APIRouter(routing.Router):
         response_model_include: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_exclude: Optional[Union[SetIntStr, DictIntStrAny]] = None,
         response_model_by_alias: bool = True,
+        response_dict_by_alias: bool = True,
         response_model_exclude_unset: bool = False,
         response_model_exclude_defaults: bool = False,
         response_model_exclude_none: bool = False,
@@ -1300,6 +1330,7 @@ class APIRouter(routing.Router):
             response_model_include=response_model_include,
             response_model_exclude=response_model_exclude,
             response_model_by_alias=response_model_by_alias,
+            response_dict_by_alias=response_dict_by_alias,
             response_model_exclude_unset=response_model_exclude_unset,
             response_model_exclude_defaults=response_model_exclude_defaults,
             response_model_exclude_none=response_model_exclude_none,
