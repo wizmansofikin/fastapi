@@ -6,9 +6,9 @@ from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import HTTPBase as HTTPBaseModel
 from fastapi.openapi.models import HTTPBearer as HTTPBearerModel
 from fastapi.security.base import SecurityBase
-from fastapi.security.utils import get_authorization_scheme_param
+from fastapi.security.utils import get_authorization_scheme_param, handle_exc_for_ws
 from pydantic import BaseModel
-from starlette.requests import Request
+from starlette.requests import HTTPConnection
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 
@@ -35,8 +35,9 @@ class HTTPBase(SecurityBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.auto_error = auto_error
 
+    @handle_exc_for_ws
     async def __call__(
-        self, request: Request
+        self, request: HTTPConnection
     ) -> Optional[HTTPAuthorizationCredentials]:
         authorization = request.headers.get("Authorization")
         scheme, credentials = get_authorization_scheme_param(authorization)
@@ -64,9 +65,8 @@ class HTTPBasic(HTTPBase):
         self.realm = realm
         self.auto_error = auto_error
 
-    async def __call__(  # type: ignore
-        self, request: Request
-    ) -> Optional[HTTPBasicCredentials]:
+    @handle_exc_for_ws
+    async def __call__(self, request: HTTPConnection) -> Optional[HTTPBasicCredentials]:
         authorization = request.headers.get("Authorization")
         scheme, param = get_authorization_scheme_param(authorization)
         if self.realm:
@@ -110,8 +110,9 @@ class HTTPBearer(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.auto_error = auto_error
 
+    @handle_exc_for_ws
     async def __call__(
-        self, request: Request
+        self, request: HTTPConnection
     ) -> Optional[HTTPAuthorizationCredentials]:
         authorization = request.headers.get("Authorization")
         scheme, credentials = get_authorization_scheme_param(authorization)
@@ -145,8 +146,9 @@ class HTTPDigest(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.auto_error = auto_error
 
+    @handle_exc_for_ws
     async def __call__(
-        self, request: Request
+        self, request: HTTPConnection
     ) -> Optional[HTTPAuthorizationCredentials]:
         authorization = request.headers.get("Authorization")
         scheme, credentials = get_authorization_scheme_param(authorization)
