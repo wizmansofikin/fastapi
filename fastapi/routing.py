@@ -792,6 +792,7 @@ class APIRouter(routing.Router):
         generate_unique_id_function: Callable[[APIRoute], str] = Default(
             generate_unique_id
         ),
+        route_class_override: Optional[Type[APIRoute]] = None,
     ) -> None:
         if prefix:
             assert prefix.startswith("/"), "A path prefix must start with '/'"
@@ -863,7 +864,7 @@ class APIRouter(routing.Router):
                     and include_in_schema,
                     response_class=use_response_class,
                     name=route.name,
-                    route_class_override=type(route),
+                    route_class_override=route_class_override or type(route),
                     callbacks=current_callbacks,
                     openapi_extra=route.openapi_extra,
                     generate_unique_id_function=current_generate_unique_id,
