@@ -1,9 +1,15 @@
+import pydantic
 import pytest
 from dirty_equals import IsDict
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.testclient import TestClient
 from fastapi.utils import match_pydantic_error_url
 from typing_extensions import Annotated
+
+if pydantic.__version__.startswith("2."):
+    from pydantic import StringConstraints
+else:
+    StringConstraints = Query
 
 app = FastAPI()
 
@@ -14,7 +20,7 @@ async def default(foo: Annotated[str, Query()] = "foo"):
 
 
 @app.get("/required")
-async def required(foo: Annotated[str, Query(min_length=1)]):
+async def required(foo: Annotated[str, StringConstraints(min_length=1)]):
     return {"foo": foo}
 
 
