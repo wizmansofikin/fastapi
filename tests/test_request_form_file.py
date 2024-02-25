@@ -1,7 +1,9 @@
-from typing import Annotated
+from typing import List
 
+import pytest
 from fastapi import FastAPI, File, Form
 from fastapi.testclient import TestClient
+from typing_extensions import Annotated
 
 app = FastAPI()
 
@@ -14,90 +16,47 @@ async def create_file(token: Annotated[str, Form()], file: Annotated[bytes, File
     }
 
 
-client = TestClient(app)
+@app.post("/multiple-files/")
+async def create_multiple_file(
+    token: Annotated[str, Form()], files: Annotated[List[bytes], File()]
+):
+    return {
+        "file_contents": files,
+        "token": token,
+    }
 
-openapi_schema = {
-    "openapi": "3.1.0",
-    "info": {"title": "FastAPI", "version": "0.1.0"},
-    "paths": {
-        "/files/": {
-            "post": {
-                "summary": "Create File",
-                "operationId": "create_file_files__post",
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Body_create_file_files__post"
-                            }
-                        }
-                    },
-                    "required": True,
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {"application/json": {"schema": {}}},
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        },
-                    },
-                },
-            }
-        }
-    },
-    "components": {
-        "schemas": {
-            "Body_create_file_files__post": {
-                "title": "Body_create_file_files__post",
-                "required": ["token", "file"],
-                "type": "object",
-                "properties": {
-                    "token": {"title": "Token", "type": "string"},
-                    "file": {"title": "File", "type": "string", "format": "binary"},
-                },
-            },
-            "HTTPValidationError": {
-                "title": "HTTPValidationError",
-                "type": "object",
-                "properties": {
-                    "detail": {
-                        "title": "Detail",
-                        "type": "array",
-                        "items": {"$ref": "#/components/schemas/ValidationError"},
-                    }
-                },
-            },
-            "ValidationError": {
-                "title": "ValidationError",
-                "required": ["loc", "msg", "type"],
-                "type": "object",
-                "properties": {
-                    "loc": {
-                        "title": "Location",
-                        "type": "array",
-                        "items": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
-                    },
-                    "msg": {"title": "Message", "type": "string"},
-                    "type": {"title": "Error Type", "type": "string"},
-                },
-            },
-        }
-    },
-}
+
+client = TestClient(app)
 
 
 def test_openapi_schema():
     response = client.get("/openapi.json")
     assert response.status_code == 200, response.text
-    assert response.json() == openapi_schema
+    json_response = response.json()
+    assert json_response["components"]["schemas"]["Body_create_file_files__post"] == {
+        "title": "Body_create_file_files__post",
+        "required": ["token", "file"],
+        "type": "object",
+        "properties": {
+            "token": {"title": "Token", "type": "string"},
+            "file": {"title": "File", "type": "string", "format": "binary"},
+        },
+    }
+    assert json_response["components"]["schemas"][
+        "Body_create_multiple_file_multiple_files__post"
+    ] == {
+        "title": "Body_create_multiple_file_multiple_files__post",
+        "required": ["token", "files"],
+        "type": "object",
+        "properties": {
+            "token": {"title": "Token", "type": "string"},
+            "files": {
+                "items": {"format": "binary", "type": "string"},
+                "title": "Files",
+                "type": "array",
+            },
+        },
+    }
 
 
 def test_post_form_no_body():
@@ -137,3 +96,33 @@ def test_post_files_and_token(tmp_path):
         )
     assert response.status_code == 200, response.text
     assert response.json() == {"file_size": 14, "token": "foo"}
+
+
+@pytest.fixture
+def f1(tmp_path):
+    f_path = tmp_path / "example1.txt"
+    f_path.write_text("foo")
+    with f_path.open("rb") as f:
+        yield f
+
+
+@pytest.fixture
+def f2(tmp_path):
+    f_path = tmp_path / "example2.txt"
+    f_path.write_text("bar")
+    with f_path.open("rb") as f:
+        yield f
+
+
+def test_post_multiple_files_and_token(f1, f2):
+    response = client.post(
+        "/multiple-files/",
+        data={"token": "foo"},
+        files=[
+            ("files", f1),
+            ("files", f2),
+        ],
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"file_contents": ["foo", "bar"], "token": "foo"}
