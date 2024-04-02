@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import HTTPBase as HTTPBaseModel
 from fastapi.openapi.models import HTTPBearer as HTTPBearerModel
 from fastapi.security.base import SecurityBase
-from fastapi.security.utils import get_authorization_scheme_param, handle_exc_for_ws
+from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import BaseModel
 from starlette.requests import HTTPConnection
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
@@ -79,7 +79,6 @@ class HTTPBase(SecurityBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.auto_error = auto_error
 
-    @handle_exc_for_ws
     async def __call__(
         self, request: HTTPConnection
     ) -> Optional[HTTPAuthorizationCredentials]:
@@ -185,7 +184,6 @@ class HTTPBasic(HTTPBase):
         self.realm = realm
         self.auto_error = auto_error
 
-    @handle_exc_for_ws
     async def __call__(  # type: ignore
         self, request: HTTPConnection
     ) -> Optional[HTTPBasicCredentials]:
@@ -300,7 +298,6 @@ class HTTPBearer(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.auto_error = auto_error
 
-    @handle_exc_for_ws
     async def __call__(
         self, request: HTTPConnection
     ) -> Optional[HTTPAuthorizationCredentials]:
@@ -403,7 +400,6 @@ class HTTPDigest(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.auto_error = auto_error
 
-    @handle_exc_for_ws
     async def __call__(
         self, request: HTTPConnection
     ) -> Optional[HTTPAuthorizationCredentials]:
