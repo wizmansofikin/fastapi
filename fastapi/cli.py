@@ -11,3 +11,5 @@ def main() -> None:
         print(message)
         raise RuntimeError(message)  # noqa: B904
     cli_main()
+
+
