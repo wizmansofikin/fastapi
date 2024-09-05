@@ -88,8 +88,6 @@ multipart_incorrect_install_error = (
     "pip install python-multipart\n"
 )
 
-_unset: Any = object()
-
 
 def ensure_multipart_is_installed() -> None:
     try:
@@ -549,7 +547,7 @@ async def solve_dependencies(
     *,
     request: Union[Request, WebSocket],
     dependant: Dependant,
-    body: Optional[Union[Dict[str, Any], FormData]] = None,
+    body: Optional[Union[Dict[str, Any], FormData]] = Undefined,
     background_tasks: Optional[StarletteBackgroundTasks] = None,
     response: Optional[Response] = None,
     dependency_overrides_provider: Optional[Any] = None,
@@ -671,7 +669,7 @@ async def solve_dependencies(
     )
 
 
-def _accepts_none(field: ModelField) -> bool:
+def _allows_none(field: ModelField) -> bool:
     origin = get_origin(field.type_)
     return (origin is Union or origin is types.UnionType) and type(None) in get_args(
         field.type_
@@ -681,11 +679,16 @@ def _accepts_none(field: ModelField) -> bool:
 def _validate_value_with_model_field(
     *, field: ModelField, value: Any, values: Dict[str, Any], loc: Tuple[str, ...]
 ) -> Tuple[Any, List[Any]]:
-    if value is None or value is _unset:
+    if value is Undefined:
         if field.required:
             return None, [get_missing_field_error(loc=loc)]
-        elif value is None and _accepts_none(field):
+        else:
+            return deepcopy(field.default), []
+    if value is None:
+        if _allows_none(field):
             return value, []
+        if field.required:
+            return None, [get_missing_field_error(loc=loc)]
         else:
             return deepcopy(field.default), []
     v_, errors_ = field.validate(value, values, loc=loc)
@@ -702,9 +705,9 @@ def _get_multidict_value(field: ModelField, values: Mapping[str, Any]) -> Any:
     if is_sequence_field(field) and isinstance(values, (ImmutableMultiDict, Headers)):
         value = values.getlist(field.alias)
     else:
-        value = values.get(field.alias, None)
+        value = values.get(field.alias, Undefined)
     if (
-        value is None
+        value is Undefined
         or (
             isinstance(field.field_info, params.Form)
             and isinstance(value, str)  # For type checks
@@ -713,7 +716,7 @@ def _get_multidict_value(field: ModelField, values: Mapping[str, Any]) -> Any:
         or (is_sequence_field(field) and len(value) == 0)
     ):
         if field.required:
-            return
+            return Undefined
         else:
             return deepcopy(field.default)
     return value
@@ -799,7 +802,7 @@ async def _extract_form_body(
                 for sub_value in value:
                     tg.start_soon(process_fn, sub_value.read)
             value = serialize_sequence_value(field=field, value=results)
-        if value is not None:
+        if value is not Undefined and value is not None:
             values[field.name] = value
     return values
 
@@ -832,10 +835,10 @@ async def request_body_to_args(
         return {first_field.name: v_}, errors_
     for field in body_fields:
         loc = ("body", field.alias)
-        value: Any = _unset
+        value: Any = Undefined
         if body_to_process is not None:
             try:
-                value = body_to_process.get(field.alias)
+                value = body_to_process.get(field.alias, Undefined)
             # If the received body is a list, not a dict
             except AttributeError:
                 errors.append(get_missing_field_error(loc))
