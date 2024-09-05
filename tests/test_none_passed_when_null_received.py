@@ -1,8 +1,8 @@
-from typing import Optional, Union, Annotated
+from typing import Annotated, Optional, Union
 
-from fastapi import FastAPI, Body
-from fastapi.testclient import TestClient
 import pytest
+from fastapi import Body, FastAPI
+from fastapi.testclient import TestClient
 
 app = FastAPI()
 DEFAULT = 1234567890
@@ -20,7 +20,7 @@ def api2(integer_or_null: Annotated[Optional[int], Body(embed=True)] = DEFAULT) 
 
 @app.post("/api3")
 def api3(
-    integer_or_null: Annotated[Union[int, None], Body(embed=True)] = DEFAULT
+    integer_or_null: Annotated[Union[int, None], Body(embed=True)] = DEFAULT,
 ) -> dict:
     return {"received": integer_or_null}
 
