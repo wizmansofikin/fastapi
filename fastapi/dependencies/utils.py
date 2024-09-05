@@ -2,6 +2,7 @@ import inspect
 from contextlib import AsyncExitStack, contextmanager
 from copy import copy, deepcopy
 from dataclasses import dataclass
+import types
 from typing import (
     Any,
     Callable,
@@ -86,6 +87,8 @@ multipart_incorrect_install_error = (
     'And then install "python-multipart" with: \n\n'
     "pip install python-multipart\n"
 )
+
+_unset: Any = object()
 
 
 def ensure_multipart_is_installed() -> None:
@@ -668,12 +671,21 @@ async def solve_dependencies(
     )
 
 
+def _accepts_none(field: ModelField) -> bool:
+    origin = get_origin(field.type_)
+    return (origin is Union or origin is types.UnionType) and type(None) in get_args(
+        field.type_
+    )
+
+
 def _validate_value_with_model_field(
     *, field: ModelField, value: Any, values: Dict[str, Any], loc: Tuple[str, ...]
 ) -> Tuple[Any, List[Any]]:
-    if value is None:
+    if value is None or value is _unset:
         if field.required:
             return None, [get_missing_field_error(loc=loc)]
+        elif value is None and _accepts_none(field):
+            return value, []
         else:
             return deepcopy(field.default), []
     v_, errors_ = field.validate(value, values, loc=loc)
@@ -820,7 +832,7 @@ async def request_body_to_args(
         return {first_field.name: v_}, errors_
     for field in body_fields:
         loc = ("body", field.alias)
-        value: Optional[Any] = None
+        value: Any = _unset
         if body_to_process is not None:
             try:
                 value = body_to_process.get(field.alias)
