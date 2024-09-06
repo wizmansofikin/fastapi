@@ -811,7 +811,7 @@ async def _extract_form_body(
 
 async def request_body_to_args(
     body_fields: List[ModelField],
-    received_body: Optional[Union[Dict[str, Any], FormData]],
+    received_body: Optional[Union[Dict[str, Any], FormData, UndefinedType]],
     embed_body_fields: bool,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     values: Dict[str, Any] = {}
@@ -838,7 +838,9 @@ async def request_body_to_args(
     for field in body_fields:
         loc = ("body", field.alias)
         value: Any = Undefined
-        if body_to_process is not None:
+        if body_to_process is not None and not isinstance(
+            body_to_process, UndefinedType
+        ):
             try:
                 value = body_to_process.get(field.alias, Undefined)
             # If the received body is a list, not a dict
