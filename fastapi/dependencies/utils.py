@@ -1,4 +1,5 @@
 import inspect
+import sys
 import types
 from contextlib import AsyncExitStack, contextmanager
 from copy import copy, deepcopy
@@ -669,12 +670,20 @@ async def solve_dependencies(
         dependency_cache=dependency_cache,
     )
 
-
-def _allows_none(field: ModelField) -> bool:
-    origin = get_origin(field.type_)
-    return (origin is Union or origin is types.UnionType) and type(None) in get_args(
-        field.type_
-    )
+if PYDANTIC_V2:
+    if sys.hexversion >= 0x30a00000:
+        def _allows_none(field: ModelField) -> bool:
+            origin = get_origin(field.type_)
+            return (origin is Union or origin is types.UnionType) and type(None) in get_args(
+                field.type_
+            )
+    else:
+        def _allows_none(field: ModelField) -> bool:
+            origin = get_origin(field.type_)
+            return origin is Union and type(None) in get_args(field.type_)
+else:
+        def _allows_none(field: ModelField) -> bool:
+            return field.allow_none
 
 
 def _validate_value_with_model_field(
