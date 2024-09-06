@@ -27,6 +27,7 @@ from fastapi._compat import (
     ModelField,
     Required,
     Undefined,
+    UndefinedType,
     _regenerate_error_with_loc,
     copy_field_info,
     create_body_model,
@@ -547,7 +548,7 @@ async def solve_dependencies(
     *,
     request: Union[Request, WebSocket],
     dependant: Dependant,
-    body: Optional[Union[Dict[str, Any], FormData]] = Undefined,
+    body: Optional[Union[Dict[str, Any], FormData, UndefinedType]] = Undefined,
     background_tasks: Optional[StarletteBackgroundTasks] = None,
     response: Optional[Response] = None,
     dependency_overrides_provider: Optional[Any] = None,
@@ -702,6 +703,7 @@ def _validate_value_with_model_field(
 
 
 def _get_multidict_value(field: ModelField, values: Mapping[str, Any]) -> Any:
+    value: Any
     if is_sequence_field(field) and isinstance(values, (ImmutableMultiDict, Headers)):
         value = values.getlist(field.alias)
     else:
