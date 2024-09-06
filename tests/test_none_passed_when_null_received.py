@@ -10,7 +10,7 @@ DEFAULT = 1234567890
 
 endpoints = []
 
-if sys.hexversion >= 0x30a0000:
+if sys.hexversion >= 0x30A0000:
     from typing import Annotated
 
     @app.post("/api1")
