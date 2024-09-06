@@ -687,7 +687,7 @@ if PYDANTIC_V2:
 else:
 
     def _allows_none(field: ModelField) -> bool:
-        return field.allow_none # type: ignore
+        return field.allow_none  # type: ignore
 
 
 def _validate_value_with_model_field(
