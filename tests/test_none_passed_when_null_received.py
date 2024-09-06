@@ -54,6 +54,7 @@ endpoints.append("/api4")
 def api5(integer: int = Body(embed=True)) -> dict:
     return {"received": integer}
 
+
 client = TestClient(app)
 
 
