@@ -742,7 +742,7 @@ def _get_multidict_value(
     if is_sequence_field(field) and isinstance(values, (ImmutableMultiDict, Headers)):
         value = values.getlist(alias)
     else:
-        value = values.get(field.alias, Undefined)
+        value = values.get(alias, Undefined)
     if (
         value is Undefined
         or (
@@ -793,7 +793,7 @@ def request_params_to_args(
                     else field.name.replace("_", "-")
                 )
         value = _get_multidict_value(field, received_params, alias=alias)
-        if value is not None:
+        if value is not Undefined and value is not None:
             params_to_process[field.name] = value
         processed_keys.add(alias or field.alias)
         processed_keys.add(field.name)
